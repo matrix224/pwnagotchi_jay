@@ -95,13 +95,17 @@ class Client(object):
                                 break
             except ConnectionRefusedError:
                 sleep_time = min_sleep + max_sleep*random.random()
-                logging.warning('[bettercap] nobody seems to be listening at the bettercap endpoint...')
-                logging.warning('[bettercap] retrying connection in {} sec'.format(sleep_time))
+                logging.warning('[bettercap:start_websocket] nobody seems to be listening at the bettercap endpoint...')
+                logging.warning('[bettercap:start_websocket] retrying connection in {} sec'.format(sleep_time))
                 await asyncio.sleep(sleep_time)
                 continue
-            except OSError:
-                logging.warning('connection to the bettercap endpoint failed...')
-                pwnagotchi.restart("AUTO")
+            except Exception:
+                sleep_time = min_sleep + max_sleep*random.random()
+                logging.warning('[bettercap:start_websocket] connection to the bettercap endpoint failed...')
+                logging.warning('[bettercap:start_websocket] retrying connection in {} sec'.format(sleep_time))
+                await asyncio.sleep(sleep_time)
+                continue
+                #pwnagotchi.restart("AUTO")
 
     def run(self, command, verbose_errors=True):
         while True:
@@ -109,8 +113,8 @@ class Client(object):
                 r = requests.post("%s/session" % self.url, auth=self.auth, json={'cmd': command})
             except requests.exceptions.ConnectionError as e:
                 sleep_time = min_sleep + max_sleep*random.random()
-                logging.warning("[bettercap] can't run my request... connection to the bettercap endpoint failed...")
-                logging.warning('[bettercap] retrying run in {} sec'.format(sleep_time))
+                logging.warning("[bettercap:run] can't run my request... connection to the bettercap endpoint failed...")
+                logging.warning('[bettercap:run] retrying run in {} sec'.format(sleep_time))
                 sleep(sleep_time)
             else:
                 break
