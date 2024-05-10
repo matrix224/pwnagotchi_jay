@@ -483,7 +483,7 @@
 
     - name: clone pwnagotchi repository
       git:
-        repo: https://github.com/jayofelony/pwnagotchi.git
+        repo: https://github.com/matrix224/pwnagotchi_jay.git
         dest: /usr/local/src/pwnagotchi
 
     - name: build pwnagotchi wheel

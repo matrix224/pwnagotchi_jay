@@ -46,7 +46,7 @@ main.plugins.bt-tether.devices.ios-phone.max_tries = 0
 main.plugins.bt-tether.devices.ios-phone.share_internet = true
 main.plugins.bt-tether.devices.ios-phone.priority = 999
 
-main.plugins.fix_services.enabled = true
+main.plugins.fix_services.enabled = false
 
 main.plugins.gdrivesync.enabled = false
 main.plugins.gdrivesync.backupfiles = ['']

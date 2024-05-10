@@ -270,7 +270,7 @@ def pwnagotchi_cli():
         sys.exit(0)
 
     if args.check_update:
-        resp = requests.get("https://api.github.com/repos/jayofelony/pwnagotchi/releases/latest")
+        resp = requests.get("https://api.github.com/repos/matrix224/pwnagotchi_jay/releases/latest")
         latest = resp.json()
         latest_ver = latest['tag_name'].replace('v', '')
 
