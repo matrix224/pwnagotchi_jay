@@ -28,30 +28,42 @@ class AsyncAdvertiser(object):
         }
         self._peers = {}
         self._closest_peer = None
+        self._advertisementStartHandled = False
 
     def fingerprint(self):
         return self._keypair.fingerprint
 
-    def _update_advertisement(self, s):
+    def _update_advertisement(self):
         self._advertisement['pwnd_run'] = len(self._handshakes)
         self._advertisement['pwnd_tot'] = utils.total_unique_handshakes(self._config['bettercap']['handshakes'])
         self._advertisement['uptime'] = pwnagotchi.uptime()
         self._advertisement['epoch'] = self._epoch.epoch
-        grid.set_advertisement_data(self._advertisement)
+        try:
+            grid.set_advertisement_data(self._advertisement)
+        except Exception as e:
+            logging.error("[mesh/utils:_update_advertisement] Error setting advertisement -> %s" % e)
 
     def start_advertising(self):
-        if self._config['personality']['advertise']:
-            _thread.start_new_thread(self._adv_poller, ())
-
-            grid.set_advertisement_data(self._advertisement)
-            grid.advertise(True)
-            self._view.on_state_change('face', self._on_face_change)
-        else:
+        if not self._advertisementStartHandled and self._config['personality']['advertise']:                
+            try:
+                grid.set_advertisement_data(self._advertisement)
+                grid.advertise(True)
+            except Exception as e:
+                logging.error("[mesh/utils:start_advertising] Error while starting advertisements -> %s" % e)
+            else:
+                _thread.start_new_thread(self._adv_poller, ())
+                self._view.on_state_change('face', self._on_face_change)
+                self._advertisementStartHandled = True
+        elif not self._advertisementStartHandled:
             logging.warning("advertising is disabled")
+            self._advertisementStartHandled = True
 
     def _on_face_change(self, old, new):
         self._advertisement['face'] = new
-        grid.set_advertisement_data(self._advertisement)
+        try:
+            grid.set_advertisement_data(self._advertisement)
+        except Exception as e:
+            logging.error("[mesh/utils:_on_face_change] Error setting advertisement -> %s" % e)
 
     def cumulative_encounters(self):
         return sum(peer.encounters for _, peer in self._peers.items())

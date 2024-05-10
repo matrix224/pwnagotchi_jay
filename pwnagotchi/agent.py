@@ -117,7 +117,8 @@ class Agent(Client, Automata, AsyncAdvertiser, AsyncTrainer):
             logging.debug("starting wifi module ...")
             self.start_module('wifi.recon')
 
-        self.start_advertising()
+        if not self._advertisementStartHandled:
+            self.start_advertising()
 
     def _wait_bettercap(self):
         while True:
@@ -228,7 +229,7 @@ class Agent(Client, Automata, AsyncAdvertiser, AsyncTrainer):
                 return ap, {'mac': station_mac, 'vendor': ''}
         return None
 
-    def _update_uptime(self, s):
+    def _update_uptime(self):
         secs = pwnagotchi.uptime()
         self._view.set('uptime', utils.secs_to_hhmmss(secs))
         # self._view.set('epoch', '%04d' % self._epoch.epoch)
@@ -307,35 +308,26 @@ class Agent(Client, Automata, AsyncAdvertiser, AsyncTrainer):
         _thread.start_new_thread(self._fetch_stats, ())
 
     def _fetch_stats(self):
+        bettercapFailed = False
         while True:
             try:
-                s = self.session()
+                self.session()
             except Exception as err:
                 logging.error("[agent:_fetch_stats] self.session: %s" % repr(err))
-
-            try:
-                self._update_uptime(s)
-            except Exception as err:
-                logging.error("[agent:_fetch_stats] self.update_uptimes: %s" % repr(err))
-
-            try:
-                self._update_advertisement(s)
-            except Exception as err:
-                logging.error("[agent:_fetch_stats] self.update_advertisements: %s" % repr(err))
-
-            try:
+                bettercapFailed = True
+            else:
+                if bettercapFailed:
+                    logging.info("[agent:_fetch_stats: Re-established bettercap session, restarting events and monitor...")
+                    self.setup_events()
+                    self.start_monitor_mode()
+                    bettercapFailed = False
+                if not self._advertisementStartHandled:
+                    self.start_advertising()
+                self._update_uptime()
+                self._update_advertisement()
                 self._update_peers()
-            except Exception as err:
-                logging.error("[agent:_fetch_stats] self.update_peers: %s" % repr(err))
-            try:
                 self._update_counters()
-            except Exception as err:
-                logging.error("[agent:_fetch_stats] self.update_counters: %s" % repr(err))
-            try:
                 self._update_handshakes(0)
-            except Exception as err:
-                logging.error("[agent:_fetch_stats] self.update_handshakes: %s" % repr(err))
-
             time.sleep(5)
 
     async def _on_event(self, msg):
