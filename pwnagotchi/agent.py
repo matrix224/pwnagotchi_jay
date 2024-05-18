@@ -48,6 +48,8 @@ class Agent(Client, Automata, AsyncAdvertiser, AsyncTrainer):
         self.last_session = LastSession(self._config)
         self.mode = 'auto'
 
+        self.last_bettercap_restart = 0
+
         if not os.path.exists(config['bettercap']['handshakes']):
             os.makedirs(config['bettercap']['handshakes'])
 
@@ -319,17 +321,24 @@ class Agent(Client, Automata, AsyncAdvertiser, AsyncTrainer):
                 bettercapFailed = True
             else:
                 if bettercapFailed:
-                    logging.info("[agent:_fetch_stats: Re-established bettercap session, restarting events and monitor...")
+                    logging.info("[agent:_fetch_stats]: Re-established bettercap session, restarting events and monitor...")
                     self.setup_events()
                     self.start_monitor_mode()
                     bettercapFailed = False
                 if not self._advertisementStartHandled:
                     self.start_advertising()
-                self._update_uptime()
-                self._update_advertisement()
-                self._update_peers()
-                self._update_counters()
-                self._update_handshakes(0)
+                if self._epoch.blind_for >= 3 and time.time() - self.last_bettercap_restart > 300:
+                    logging.warn("[agent:_fetch_stats]: Been blind for %d epochs, will restart bettercap", self._epoch.blind_for)
+                    self._view.set('status', 'Forcing bettercap restart!')
+                    self._view.update(force=True)
+                    os.system("systemctl restart bettercap")
+                    self.last_bettercap_restart = time.time()
+                else:
+                    self._update_uptime()
+                    self._update_advertisement()
+                    self._update_peers()
+                    self._update_counters()
+                    self._update_handshakes(0)
             time.sleep(5)
 
     async def _on_event(self, msg):
